@@ -11,12 +11,9 @@ def midpoint(a: float, b: float):
 def have_opposite_signs(a: float, b: float):
     return a * b < 0
 
-# All of this are the inputs
-    # These are the intervals
-interval_l = 0
-interval_u = 1
-    # This is the entered error
-i_error = 0.01
+interval_l = int(input("Enter the lower interval: "))
+interval_u = int(input("Enter the upper interval: "))
+i_error = int(input("Enter the error: "))
 
 # This is the form to calcule the error in the iter
 error = (interval_u - interval_l)/2
