@@ -2,7 +2,7 @@ import math
 
 # This is the math function we're gonna use
 def function(x: float):
-    return round(pow(math.e, 3 * x) - 4,4)
+    return round(pow(math.e, 3 * x) - 4, 4)
 
 # Logic of the method
 def midpoint(a: float, b: float):
@@ -11,9 +11,9 @@ def midpoint(a: float, b: float):
 def have_opposite_signs(a: float, b: float):
     return a * b < 0
 
-interval_l = int(input("Enter the lower interval: "))
-interval_u = int(input("Enter the upper interval: "))
-i_error = int(input("Enter the error: "))
+interval_l = float(input("Enter the lower interval: "))
+interval_u = float(input("Enter the upper interval: "))
+i_error = float(input("Enter the error: "))
 
 # This is the form to calcule the error in the iter
 error = (interval_u - interval_l)/2
