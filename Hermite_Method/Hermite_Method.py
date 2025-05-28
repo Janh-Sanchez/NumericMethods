@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
 def take_data(amount_of_x: int):
     x = []
     f_x = []
@@ -67,6 +70,39 @@ def print_hermite_formula(z_k, Q):
     print(formula)
 
 
+def hermite_polynomial(x_value, z_k, Q):
+    n = len(z_k)
+    result = Q[0][0]
+    product_term = 1.0
+
+    for i in range(1, n):
+        product_term *= (x_value - z_k[i - 1])
+        result += Q[i][i] * product_term
+
+    return result
+
+
+def graph_hermite_points():
+
+    # Rango de valores de x para la gráfica
+    x_min = min(x) - 1
+    x_max = max(x) + 1
+    x_vals = np.linspace(x_min, x_max, 500)
+
+    # Evaluamos H(x) en cada punto del rango
+    y_vals = [hermite_polynomial(x_val, z_k, Q) for x_val in x_vals]
+
+    # Graficamos
+    plt.figure(figsize=(8, 5))
+    plt.plot(x_vals, y_vals, label='H(x) - Polinomio de Hermite', color='blue')
+    plt.scatter(x, f_x, color='red', label='Puntos dados')
+    plt.title("Polinomio Interpolante de Hermite")
+    plt.xlabel("x")
+    plt.ylabel("H(x)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 
 # Programa principal
 amount_of_x = int(input("Enter the amount of x to use: "))
@@ -83,4 +119,4 @@ print("Tabla de diferencias divididas de Hermite:")
 print_table(Q)
 
 print_hermite_formula(z_k, Q)
-
+graph_hermite_points()
