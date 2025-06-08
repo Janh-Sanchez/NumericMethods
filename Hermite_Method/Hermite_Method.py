@@ -153,40 +153,44 @@ def hermite_polynomial(x_value, z_k, Q):
     return result
 
 
-# Plot Hermite and spline curves with optional zoom on region of interest
-def graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos):
+def graph_hermite_and_splines(x, f_x, z_k, Q, splines_funcs, nodos):
+    # Hermite global
     x_min = min(x)
     x_max = max(x)
     x_vals_hermite = np.linspace(x_min, x_max, 500)
     y_vals_hermite = [hermite_polynomial(x_val, z_k, Q) for x_val in x_vals_hermite]
 
+    # Plot setup
     plt.figure(figsize=(10, 6))
-    plt.plot(x_vals_hermite, y_vals_hermite, label='Hermite Polynomial', color='blue')
+    plt.plot(x_vals_hermite, y_vals_hermite, label='Hermite Global', color='blue')
 
-    x_vals_spline = []
-    y_vals_spline = []
-    for i in range(len(splines)):
+    # Spline Hermite por tramos
+    for i, spline_func in enumerate(splines_funcs):
         xs = np.linspace(nodos[i], nodos[i + 1], 100)
-        ys = [splines[i](xv) for xv in xs]
-        x_vals_spline.extend(xs)
-        y_vals_spline.extend(ys)
+        ys = [spline_func(valx) for valx in xs]
+        plt.plot(xs, ys, linestyle='--', color='green', label='Spline Hermite' if i == 0 else "")
 
-    plt.plot(x_vals_spline, y_vals_spline, label='Cubic Spline', color='green', linestyle='--')
-    plt.scatter(x, f_x, color='red', zorder=5, label='Input Points')
+    # Puntos originales
+    plt.scatter(x, f_x, color='red', label='Puntos dados', zorder=5)
 
-    plt.xlim(x_min, x_max)
-    all_y_vals = y_vals_hermite + y_vals_spline
-    y_min = min(all_y_vals)
-    y_max = max(all_y_vals)
+    # Límites del gráfico
+    all_y_vals = y_vals_hermite
+    for spline_func, a, b in zip(splines_funcs, nodos[:-1], nodos[1:]):
+        all_y_vals += [spline_func(valx) for valx in np.linspace(a, b, 10)]
+
+    y_min, y_max = min(all_y_vals), max(all_y_vals)
     y_margin = 0.05 * (y_max - y_min)
     plt.ylim(y_min - y_margin, y_max + y_margin)
+    plt.xlim(x_min, x_max)
 
-    plt.title("Interpolation: Hermite vs. Cubic Spline")
+    # Estética
+    plt.title("Interpolación: Hermite Global vs. Spline Hermite por tramos")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
     plt.legend()
     plt.show()
+
 
 
 # Main program
@@ -204,4 +208,17 @@ print_table(Q)
 
 print_hermite_formula(z_k, Q)
 
-# graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos)
+# Obtener polinomios spline Hermite por tramos
+splines_coeffs = getPolynomsSplines(x, Q)
+
+# Crear funciones evaluables lambda para cada tramo
+splines_functions = []
+for i in range(len(splines_coeffs)):
+    coeffs = splines_coeffs[i]
+    xi = x[i]
+    xiAux = x[i + 1]
+    func = lambda valX, c=coeffs, xi=xi, xiAux=xiAux: evaluatePolynomsSplines(valX, xi, xiAux, c)
+    splines_functions.append(func)
+
+# Generar gráfica de comparación
+graph_hermite_and_splines(x, f_x, z_k, Q, splines_functions, x)
