@@ -15,6 +15,7 @@ def take_data(amount_of_x: int):
         derivate.append(derivate_value)
     return x, f_x, derivate
 
+
 # Generate repeated nodes and values for Hermite interpolation
 def calc_z_k(amount_of_x, x, f_x):
     z_k = []
@@ -25,6 +26,7 @@ def calc_z_k(amount_of_x, x, f_x):
         f_z_k.append(f_x[k])
         f_z_k.append(f_x[k])
     return z_k, f_z_k
+
 
 # Build divided difference table for Hermite interpolation
 def build_hermite_table(z_k, f_z_k, derivate):
@@ -46,10 +48,65 @@ def build_hermite_table(z_k, f_z_k, derivate):
 
     return Q
 
+
+def getPolynomsSplines(xp, Q):
+    coefficientsP = []
+    for i in range(len(xp) - 1):
+        b0 = float(Q[2 * i][0])
+        b1 = float(Q[2 * i + 1][1])  # Derivada en xi
+        b2 = float(Q[2 * i + 2][2])
+        b3 = float(Q[2 * i + 3][3])
+
+        coefficientsP.append((b0, b1, b2, b3))
+
+        print(f"---")
+        print(f"P{i}(x) en [{xp[i]:.7f}, {xp[i+1]:.7f}]:")
+        b1Str = f"{b1:.7f}(x - {xp[i]:.7f})"
+        b2Str = f"{b2:.7f}(x - {xp[i]:.7f})^2"
+        b3Str = f"{b3:.7f}(x - {xp[i]:.7f})^2(x - {xp[i+1]:.7f})"
+        print(f"P{i}(x) = {b0:.7f} + {b1Str} + {b2Str} + {b3Str}")
+
+        # Forma simplificada:
+        A = b3
+        B = b2 - 2 * b3 * xp[i] - b3 * xp[i + 1]
+        C = b1 - 2 * b2 * xp[i] + b3 * xp[i] ** 2 + 2 * b3 * xp[i] * xp[i + 1]
+        D = b0 - b1 * xp[i] + b2 * xp[i] ** 2 - b3 * xp[i] ** 2 * xp[i + 1]
+
+        simplified_poly_parts = []
+        if abs(A) > 1e-9:
+            simplified_poly_parts.append(f"{A:.7f}x^3")
+        if abs(B) > 1e-9:
+            simplified_poly_parts.append(f"{B:+.7f}x^2")
+        if abs(C) > 1e-9:
+            simplified_poly_parts.append(f"{C:+.7f}x")
+        if abs(D) > 1e-9:
+            simplified_poly_parts.append(f"{D:+.7f}")
+
+        simplified_poly_str = "".join(simplified_poly_parts)
+        if simplified_poly_str.startswith("+"):
+            simplified_poly_str = simplified_poly_str[1:]
+        elif not simplified_poly_str:
+            simplified_poly_str = "0.0000"
+
+        print(f"P{i}(x) (Simplificado) = {simplified_poly_str}\n")
+
+    return coefficientsP
+
+
 # Print Hermite divided differences table
 def print_table(Q):
     for row in Q:
         print(["{:.4f}".format(value) for value in row])
+
+
+def evaluatePolynomsSplines(valX, xi, xiAux, coefficients):
+    b0, b1, b2, b3 = coefficients
+    term1 = b0
+    term2 = b1 * (valX - xi)
+    term3 = b2 * (valX - xi) ** 2
+    term4 = b3 * (valX - xi) ** 2 * (valX - xiAux)
+    return term1 + term2 + term3 + term4
+
 
 # Display Hermite polynomial in factored form
 def print_hermite_formula(z_k, Q):
@@ -82,6 +139,7 @@ def print_hermite_formula(z_k, Q):
     print("\nHermite Polynomial (factored form with powers):")
     print(formula)
 
+
 # Evaluate Hermite polynomial at a given x
 def hermite_polynomial(x_value, z_k, Q):
     n = len(z_k)
@@ -94,45 +152,6 @@ def hermite_polynomial(x_value, z_k, Q):
 
     return result
 
-# Construct natural cubic spline interpolation
-def cubic_spline_natural(x, f_x):
-    n = len(x)
-    h = [x[i+1] - x[i] for i in range(n - 1)]
-    alpha = [0] + [3 * ((f_x[i+1] - f_x[i]) / h[i] - (f_x[i] - f_x[i-1]) / h[i-1]) for i in range(1, n - 1)]
-
-    l = [1] + [0] * (n - 1)
-    mu = [0] * n
-    z = [0] * n
-
-    for i in range(1, n - 1):
-        l[i] = 2 * (x[i+1] - x[i-1]) - h[i-1] * mu[i-1]
-        mu[i] = h[i] / l[i]
-        z[i] = (alpha[i] - h[i-1] * z[i-1]) / l[i]
-
-    l[n - 1] = 1
-    z[n - 1] = 0
-
-    M = [0] * n
-    for j in reversed(range(n - 1)):
-        M[j] = z[j] - mu[j] * M[j + 1]
-
-    splines = []
-    for i in range(n - 1):
-        def spline_factory(i=i):
-            def S(x_val):
-                hi = h[i]
-                xi, xi1 = x[i], x[i+1]
-                fi, fi1 = f_x[i], f_x[i+1]
-                Mi, Mi1 = M[i], M[i+1]
-
-                t1 = Mi * (xi1 - x_val)**3 / (6 * hi)
-                t2 = Mi1 * (x_val - xi)**3 / (6 * hi)
-                t3 = (fi / hi - Mi * hi / 6) * (xi1 - x_val)
-                t4 = (fi1 / hi - Mi1 * hi / 6) * (x_val - xi)
-                return t1 + t2 + t3 + t4
-            return S
-        splines.append(spline_factory())
-    return splines, x
 
 # Plot Hermite and spline curves with optional zoom on region of interest
 def graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos):
@@ -162,12 +181,13 @@ def graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos):
     y_margin = 0.05 * (y_max - y_min)
     plt.ylim(y_min - y_margin, y_max + y_margin)
 
-    plt.title("Interpolation: Hermite vs. Cubic Spline (Zoomed Area)")
+    plt.title("Interpolation: Hermite vs. Cubic Spline")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
     plt.legend()
     plt.show()
+
 
 # Main program
 amount_of_x = int(input("Enter the amount of x to use: "))
@@ -184,5 +204,4 @@ print_table(Q)
 
 print_hermite_formula(z_k, Q)
 
-splines, nodos = cubic_spline_natural(x, f_x)
-graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos)
+# graph_hermite_and_splines(x, f_x, z_k, Q, splines, nodos)
